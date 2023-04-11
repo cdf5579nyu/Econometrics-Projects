@@ -1,0 +1,295 @@
+---
+title: "R-problemset_econometrics"
+output:
+  html_document: default
+  pdf_document: default
+date: "2022-10-19"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This is the R-problem set 1 for Econometrics (Fall 2022), New York University
+Author: Carlos Figueroa (cdf5579)
+
+Let's begin.
+
+```{r}
+#lets load some libraries first
+
+library(dplyr)
+library(magrittr)
+library(readxl)
+library(tinytex)
+library(data.table)
+library(tibble)
+library(ggplot2)
+
+
+
+```
+
+
+lets display the data first
+
+```{r}
+
+data = data.frame(read.csv(file = "bertrand2004.csv", header = TRUE , sep =","))
+
+head(data)
+```
+
+QUESTION 1:--------------------------------------------------------------------
+
+A. What is the interpretation of C¯ in this situation? Hint: this is a 0/1 variable like a coin
+flip, so what is the mean of a Bernoulli?
+
+Since C (which stands for a person recieving a call back or not) is between zero and one, it will behave similarly to a bernoulli distribution. That would mean that C bar (the sample mean of C) is going to be equal to p, or the probability of receiving a call back. We can get this p for different subgroups and the group in general.
+
+B. What about M¯ ? Hint: the same as the previous hint.
+
+Since M also follows a bernoulli distribution, its sample mean is going to be p, so such mean is going to be equal to the probability of being a man in this dataset.
+
+
+c. Let C¯M and C¯F represent the call back rates for males and females respectively. Set up a hypothesis test for whether or not there is discrimination on sex.
+
+Given that we stated that C bar represents the sample distribution, and the probability of recieving a callback, we will want to analyze C bar (M) and C bar (F) to see if one group has higher chances of recieving a callback than the other.
+
+Then, our hypothesis testing will be for a two tail rest:
+
+H0: C¯M = C¯F then C¯M - C¯F = 0
+H1: C¯M != C¯F 
+
+If we disprove H0, we will say that there is discrimination on sex in this particular dataset.
+
+
+Here, in this section, we are going to see if both groups have similar qualifications in order to make this hypothesis test viable. If men or women are more qualified, that will change our view of the results of our hypothesis test.
+ 
+QUESTION 2---------------------------------------------------------------------
+
+Calculate the mean years of experience and education by sex
+
+```{r}
+
+exp_male = mean(data[data$sex == 'm', 'yearsexp'])
+exp_female = mean(data[data$sex == 'f', 'yearsexp'])
+
+
+educ_male = mean(data[data$sex == 'm', 'education'])
+educ_female = mean(data[data$sex == 'f', 'education'])
+
+
+print("Mean of years of Experience for males")
+exp_male
+print("Mean of years of Experience for females")
+exp_female
+
+print("Mean of years of Education for males")
+educ_male
+print("Mean of years of Education for females")
+educ_female
+```
+
+Female have more experience than male, and male have more education. But only by little, they are pretty close. Let's test if they are significally different.
+
+
+QUESTION 3---------------------------------------------------------------------
+
+
+Calculate the standard errors and do a t-test (by hand or using the test commands) for
+whether years of experience or education are different by sex
+
+```{r}
+
+print("Standard Deviations for Male (years of experience)")
+sd(data[data$sex == 'm', 'yearsexp'])
+print("Standard Deviations for Female (years of experience)")
+sd(data[data$sex == 'f', 'yearsexp'])
+print("Standard Deviations for Male (years of education)")
+sd(data[data$sex == 'm', 'education'])
+print("Standard Deviations for Female (years of education)")
+sd(data[data$sex == 'f', 'education'])
+
+#lets confirm our results with proper t-test package
+
+t.test(data[data$sex == 'm', 'yearsexp'], data[data$sex == 'f', 'yearsexp'], var.equal = TRUE)
+
+
+t.test(data[data$sex == 'm', 'education'], data[data$sex == 'f', 'education'], var.equal = TRUE)
+
+```
+
+
+QUESTION 4---------------------------------------------------------------------
+
+Now, using the same commands (or any other commands you prefer), calculate the difference
+in call back rates by sex.
+
+
+```{r}
+
+print("Probability of recieving a callback by being a male")
+mean(data[data$sex == 'm', 'call'])
+
+
+print("Probability of recieving a callback by being a female")
+mean(data[data$sex == 'f', 'call'])
+
+```
+
+QUESTION 5---------------------------------------------------------------------
+
+Finally, do a t-test to see if these differences are statistically significant. You may do this by
+hand, with the t.test command, or with any other command.
+
+
+```{r}
+
+t.test(data[data$sex == 'm', 'call'], data[data$sex == 'f', 'call'], var.equal = TRUE)
+
+```
+Not that different indeed.
+
+PART 2 - - - - - - - - - -- -- - - -- - - -- - - -- - - - - - - - -- - - - - - -
+
+
+Regression analysis
+
+
+QUESTION 6---------------------------------------------------------------------
+
+First, load the dataset just as before. For this exercise, you will also need the ggplot2 library
+loaded.
+
+
+```{r}
+df = data.frame(read.csv(file = "stocks.csv", header = TRUE , sep =","))
+
+
+head(df)
+```
+
+QUESTION 7---------------------------------------------------------------------
+
+Second, let’s plot the data. Using ggplot2 make a scatter plot of the returns of Tesla as
+the dependent variable and the returns of market as the independent variable. To this, load
+the ggplot2 package. For the command, here is a rough schema (that you have to fill in
+yourself):
+
+The first part tells R to make a ggplot object, using which dataset, x, and y variables are
+specified. The second part says to create a scatter plot.
+
+
+
+```{r}
+
+ggplot(data = df, aes(x = ret_sp500,y = ret_tsla)) + geom_point()
+
+```
+
+QUESTION 8---------------------------------------------------------------------
+
+ Now let’s add a best fit line. To do this we copy and paste the same opening as above with
+an additional command telling R to add the line:
+
+
+
+```{r}
+
+
+ggplot(data = df, aes(x = ret_sp500,y = ret_tsla)) + geom_point() + geom_smooth(method = 'lm',se=FALSE)
+
+
+```
+
+
+QUESTION 9---------------------------------------------------------------------
+
+Now let’s run a regression to calculate the beta of Tesla stock. To do this we need to use the
+lm command. The schematic as below, where you need to fill in the y, x, and data entries
+yourself:
+
+
+```{r}
+
+lm(ret_tsla ~ ret_sp500, data = df)
+
+```
+
+QUESTION 10---------------------------------------------------------------------
+
+
+What is the β of Tesla stock? Calculate the β for each of the other three stocks in the data.
+Fill in a table that looks like the one at the end of the homework.
+
+1.334472
+
+```{r}
+
+lm(ret_tsla ~ ret_sp500, data = df)
+
+lm(ret_aapl ~ ret_sp500, data = df)
+
+lm(ret_msft ~ ret_sp500, data = df)
+
+lm(ret_f ~ ret_sp500, data = df)
+
+
+
+```
+So the table will go:
+
+For Tesla: 1.334472, Apple: 1.1987471, Microsoft: 1.1883818, Ford: 1.0576747  
+
+
+QUESTION 11---------------------------------------------------------------------
+
+
+
+The results from the base lm command are a bit bare. To learn more, we use the summary
+command. To do this, we need to save our model and then feed it to the summary command:
+
+
+Once you’ve run this command, you can report the variance of the error term from your
+regressions, σ2U, by squaring the residual standard error. Run the command for each of the
+four stocks in our data—add these results to your table containing the β’s. Which stock has
+the most volatile returns net of market comovement (highest σ2U)?.
+
+
+```{r}
+
+
+model = lm(ret_tsla ~ ret_sp500, data = df)
+
+summary(model)
+
+model_1 = lm(ret_aapl ~ ret_sp500, data = df)
+
+summary(model_1)
+
+model_2 = lm(ret_msft ~ ret_sp500, data = df)
+
+summary(model_2)
+
+model_3 = lm(ret_f ~ ret_sp500, data = df)
+
+summary(model_3)
+
+```
+```{r}
+
+0.03354^2
+
+0.01233^2
+
+0.009469^2
+
+0.01822^2
+
+```
+
+For Tesla: 1.334472 and 0.001124932, Apple: 1.1987471 and 0.0001520289, Microsoft: 1.1883818 and 8.966196e-05, Ford: 1.0576747 and 0.0003319684
+
+The highest u variance is for tesla, with 0.001124932. So Tesla is the most volatile stock.
+

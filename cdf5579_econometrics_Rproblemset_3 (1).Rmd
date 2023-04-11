@@ -1,0 +1,451 @@
+---
+title: "cdf5579_econometrics_Rproblemset3"
+output:
+  pdf_document: default
+  html_document: default
+date: "2022-12-06"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+#lets load some libraries first
+
+library(dplyr)
+library(magrittr)
+library(readxl)
+library(tinytex)
+library(data.table)
+library(tibble)
+library(ggplot2)
+library(lmtest)
+library(car)
+library(sandwich) #robust SEs
+
+
+```
+
+Install package one time.
+```{r}
+
+#install.packages("AER")
+
+```
+
+Load the data and analyze it.
+
+```{r}
+
+data("Guns", package ="AER")
+
+??Guns
+
+```
+
+
+REMAINDERS OF CODE
+```{r}
+
+#reminders provided:
+
+# Running a panel regression in R
+
+
+#plm(y ~ x1 + x2 + ..., index = c("entityVariable", "timeVariable"), method = "method", effect = "individual")
+
+
+# Recovering HETEROSCEDASTIC - ROBUST standard errors
+#m1 = plm (y~x,...)
+#summary(m1, vcov = vcovHC(m1, type = "HC1", method ="white1"))
+
+
+# Recovering CLUSTER - ROBUST standard errors
+#m2 = plm(y~x,...)
+#summary(m2, vcov = vcovHC(m2, type = "HC1", cluster = "group"))
+
+```
+
+The “...”, entity and time variables, method and effect are left to you to fill in correctly. As
+a series of hints: within is the method that does fixed effects while fd takes first differences;
+individual does just individual effects, time does just time fixed effects, and twoway does both.
+
+ENTITY VARIABLE IS STATE
+TIME VARIABLE IS YEARS
+
+and for methods and effect is a bit diff
+
+In each, report the coefficient on law, the standard error on law, the t statistic, and the F test of all variables except the fixed effects. (Construct Table)
+
+
+PART A--------------------------------------------------------------------------
+
+
+1. A linear regression of log murder rate on whether a state has a shall-issue law. Notice that
+the crime rates are reported in levels, not in logs. You will need to apply the appropriate
+transformation. Hint: You can apply the logarithm directly in a regression. E.g
+
+Following the instructions from the table, no fixed effects are added, so the data is not yet treated as a panel data accounting for time or state effects.
+
+
+```{r}
+
+# Logs directly in R
+
+library("plm")
+
+print("Simplest model with no fixed effects")
+
+regression1 <- lm(log(murder) ~ factor(law), data = Guns)
+
+regression1
+
+print("Summary of the regression")
+
+summary(regression1, vcov = vcovHC(regression1, type = "HC1", method = "white1"))
+
+#errors and all the stuff they asked about 
+
+```
+Summary required:--------------------------------------------------------
+
+
+Coefficient on law: -0.4734 
+The standard error on law: 0.04587
+The t statistic: -10.32
+The F test of all variables: 106.5 on (law)
+
+
+2. Now include the following variables as controls: the percent of the state that is male male,
+the percent of the state that is African-American afam, the percent of the state that is
+Caucasian cauc, the log of income income, the log of density density, and the log of
+the prison population prisoners. Notice that once again, you will need to transform the
+variables that are not in logarithms.
+
+Following the instructions from the table, no fixed effects are added, so the data is not yet treated as a panel data accounting for time or state effects.
+
+```{r}
+
+regression2 <- lm(log(murder) ~ factor(law) + male + afam + cauc + log(income) + log(density) + log(prisoners), data = Guns)
+
+regression2
+
+print("Summary of the regression")
+
+summary(regression2, vcov = vcovHC(regression2, type = "HC1", method = "white1"))
+
+
+```
+
+Summary required:--------------------------------------------------------
+
+Coefficient on law: -0.233392 
+The standard error on law: 0.032706 
+The t statistic: -7.136
+The F test of all variables: 279.6
+
+
+3. Now run the same regression as in (ii) but adding state fixed effects. This requires using the
+individual method.
+
+```{r}
+
+
+regression_3 <- plm(log(murder) ~ factor(law) + male + afam + cauc + log(income) + log(density) + log(prisoners), data = Guns, index = c("state", "year"), method = "within", effect = "individual")
+
+regression_3
+
+print("Summary of the regression")
+
+summary(regression_3, vcov = vcovHC(regression_3, type = "HC1", method = "white1"))
+
+
+```
+Summary required:--------------------------------------------------------
+
+Coefficient on law: -0.0622328
+The standard error on law: 0.0281570
+The t statistic: -2.2102
+
+(no longer reporting Fstat for fixed effects)
+
+
+
+4. Now run the same regression as in (iii) but adding time fixed effects. This requires using
+the two ways method.
+
+```{r}
+
+regression_4 <- plm(log(murder) ~ factor(law) + male + afam + cauc + log(income) + log(density) + log(prisoners), data = Guns, index = c("state", "year"), method = "within", effect = "twoway")
+
+regression_4
+
+print("Summary of the regression")
+
+summary(regression_4, vcov = vcovHC(regression_4, type = "HC1", method = "white1"))
+
+```
+Summary required:--------------------------------------------------------
+
+
+Coefficient on law: -0.027975
+The standard error on law: 0.028043
+The t statistic: -0.9976
+
+(no longer reporting Fstat for fixed effects)
+
+5. Finally, run the same regression as in (iv), but report the cluster robust standard errors.
+
+```{r}
+
+#regression 4 but with clusters
+
+regression_5 <- plm(log(murder) ~ factor(law) + male + afam + cauc + log(income) + log(density) + log(prisoners), data = Guns, index = c("state", "year"), method = "within", effect = "twoway")
+
+regression_5
+
+print("Summary of the regression but with cluster robust standard errors")
+
+summary(regression_5, vcov = vcovHC(regression_5, type = "HC1", cluster = "group"))
+
+
+```
+Summary required:--------------------------------------------------------
+
+
+Coefficient on law: -0.027975
+The standard error on law: 0.040421
+The t statistic: -0.6921
+
+
+For definition, the difference is that clustered standard errors are a special kind of robust standard errors that account for heteroskedasticity across “clusters” of observations (such as states, schools, or individuals)
+
+So the final summary of coefficient and its transition after adding control variables and both way fixed effects is:
+
+1. Test 1 with simple linear regression and no controls
+
+    Coefficient on law: -0.4734 
+    The standard error on law: 0.04587
+    The t statistic: -10.32
+    The F test of all variables: 106.5 on (law)
+
+2. Test 2 with simple linear regression, including controls
+
+    Coefficient on law: -0.233392 
+    The standard error on law: 0.032706 
+    The t statistic: -7.136
+    The F test of all variables: 279.6
+
+3. Test 3 with fixed effects on states (individual), including controls
+
+    Coefficient on law: -0.0622328
+    The standard error on law: 0.0281570
+    The t statistic: -2.2102
+
+4. Test 4 with fixed effects on states and year (twoway), including controls
+
+    Coefficient on law: -0.027975
+    The standard error on law: 0.028043
+    The t statistic: -0.9976
+
+5. Test 4 with fixed effects on states and year (twoway), including controls and with robust cluster standard errors on coefficient
+
+    Coefficient on law: -0.027975
+    The standard error on law: 0.040421
+    The t statistic: -0.6921
+
+
+First observations: It appears that murder rate (in logs) has a negative relationship with the law pro guns being in place, but as we control for more variables and measure the effect is has had in states that have it and it states that don't over time, this relationship seems to fade away, and a falling T-stat together with standard errors increasing leads us to fail to disprove the null hypothesis, in which the law pro guns does not affects the percentage of murder rates in a state, based in the US data we have.
+
+PART B--------------------------------------------------------------------------
+
+
+For all of the regressions above:
+
+i. Write out the underlying statistical model being estimated.
+
+ii. Interpret the coefficient on law and comment on its economic significance (i.e., it is a “big”
+number, regardless of statistical significance).
+
+iii. Perform a 5% significance test of the variable law
+
+
+1. Test 1 with simple linear regression and no controls
+
+    Coefficient on law: -0.4734 
+    The standard error on law: 0.04587
+    The t statistic: -10.32
+    The F test of all variables: 106.5 on (law)
+    
+    The underlying statistical model being estimated is a simple linear regression between log of murder rates and wether the state has a law against guns present. This model is showing a strong relationship but missing a lot of variables in the way
+    
+    What -0.4734 means in this scenario is that having a shall carry law for guns in general is associated with a 47.34% percent decrease in murder rates. This is a very significant result, and it seems as if gun laws were completely necessary. Missing other variables will lead us to a misleading conclusion still.
+    
+    Performing a 5% significance test of the variable, -10.32 is higher than |1.96|, so we                  reject the null hypothesis. And the F test is even higher.
+    
+
+2. Test 2 with simple linear regression, including controls
+
+    Coefficient on law: -0.233392 
+    The standard error on law: 0.032706 
+    The t statistic: -7.136
+    The F test of all variables: 279.6
+    
+    The underlying statistical model being estimated is still a linear regression with logarithms, but now we are controlling for more variables in order to get a clearer effect of law pro guns in decreasing murder rates.
+    
+    What -0.233392 means in this scenario is that having a shall carry gun law in general is associated with a 23.39% percent decrease in murder rates, while holding the rest of the variables constant for their effects on murder rates. This is still a pretty high coefficient, and its also saying something similar than part 1 (that laws against gun are effective), but its still not the right way to analyze this problem, because we are still picking up signals that mess up the causal path between murder rates and the law.
+    
+    Performing a 5% significance test of the variable, -7.136 is higher than |1.96|, so we                  reject the null hypothesis. And the F test is even higher.
+
+
+3. Test 3 with fixed effects on states (individual), including controls
+
+    Coefficient on law: -0.0622328
+    The standard error on law: 0.0281570
+    The t statistic: -2.2102
+    
+    The underlying statistical model being estimated is that now we are including fixed effects on each state, but still compliant with OLS. Now, we are taking differences of our model whitin states in order to clean up for time-invarient variables, and let us to a clearer connection between law and murder rates. Moreover, still controlling in other variables
+    
+    What -0.0622328 means in this scenario is that having a shall carry law for guns in general is associated with a 6.22% percent decrease in murder rates, while holding the rest of the variables constant for their effects on murder rates, and accounting for state fixed effects (changes in other variables, seen and unseen). With a little more robustness, we see that the decrease rate is now 6.22%, which is still condirable, but very small in comparison to the first results we obtained.
+    
+    Performing a 5% significance test of the variable, -2.2102 is higher than |1.96|, so we                  reject the null hypothesis, but by very little.
+    
+
+4. Test 4 with fixed effects on states and year (twoway), including controls
+
+    Coefficient on law: -0.027975
+    The standard error on law: 0.028043
+    The t statistic: -0.9976
+    
+    The underlying statistical model being estimated is that now we are including fixed effects on each state, but still compliant with OLS. Now, we are taking differences of our model whitin states in order to clean up for time-invarient variables, and let us to a clearer connection between law and murder rates. Moreover, now we are also accounting for time fixed effects, which control for underlying observable and unobservable systematic differences between observed time units (years that we have). Moreover, still controlling in other variables
+    
+    What -0.027975 means in this scenario is that having a shall carry law for guns in general is associated with a 2.79% percent decrease in murder rates, while holding the rest of the variables constant for their effects on murder rates, and accounting for state and time fixed effects (changes in other variables, seen and unseen, throught the years of information we have from each state). With a little more robustness, we see that the decrease rate is now 2.79%, very small in comparison to the first results we obtained, and we fail to disprove null. Now, the effect that a law pro guns has in a state in terms of lowering the murder rate is very ambiguous, and in economic terms, its not meaningful to account for.
+    
+    Performing a 5% significance test of the variable, -0.9976 is less than |1.96|, so we fail to            reject the null hypothesis
+    
+
+5. Test 4 with fixed effects on states and year (twoway), including controls and with robust cluster standard errors on coefficient
+
+    Coefficient on law: -0.027975
+    The standard error on law: 0.040421
+    The t statistic: -0.6921
+    
+     The underlying statistical model being estimated is that now we are including fixed effects on each state, but still compliant with OLS. Now, we are taking differences of our model whitin states in order to clean up for time-invarient variables, and let us to a clearer connection between law and murder rates. Moreover, now we are also accounting for time fixed effects, which control for underlying observable and unobservable systematic differences between observed time units (years that we have). Moreover, still controlling in other variables. And now, using cluster robust standard errors. When error terms are correlated within clusters but independent across clusters, then regular standard errors, which assume independence between all observations, will be incorrect. Cluster-robust standard errors are designed to allow for correlation between observations within cluster. So its the appropiate one to use with this type of model, giving us a clearer picture of the actual errors.
+    
+    What -0.027975 means in this scenario is that having a shall carry law for guns in general is associated with a 2.79% percent decrease in murder rates, while holding the rest of the variables constant for their effects on murder rates, and accounting for state and time fixed effects (changes in other variables, seen and unseen, throught the years of information we have from each state). With a little more robustness, we see that the decrease rate is now 2.79%, very small in comparison to the first results we obtained, and we fail to disprove null. Now, the effect that a law pro guns has in a state in terms of lowering the murder rate is very ambiguous, and almost non-existent, and in economic terms, its not meaningful to account for.
+    
+
+    Performing a 5% significance test of the variable, -0.6921 is less than |1.96|, so we fail to            reject the null hypothesis
+
+In conclusion: It's not bringing as much benefit as we thought it could to lowering murdering rates, but its not increasing them either (no evidence). So whether they should be in place or not, still ambiguous.
+
+
+PART c--------------------------------------------------------------------------
+
+
+Think of at least one omitted variable that is solved by the inclusion of state fixed effects.
+For your answer to be valid three conditions will have to be met: 
+
+Variables that vary between states but not over time: Attitudes towards guns and crime, history of criminality, races, quality of police and crime-prevention programs. 
+
+(1) the variable must be correlated with the probability of passing “shall-carry laws”; 
+
+Attitudes towards guns and crime: since these laws are passed by politicians of the state, whether or not they have laws against guns or pro guns depends on the perspective their locals have, and its often a deal-breaker in terms of democratic leaning in some states. States like Texas are very pro shall-carry laws, and that would carry an ommited variable that we are controlling when controlling for individual states. 
+
+Quality of the police and crime-prevention programs: if there is a good policy and strong crime-prevention programs, then the state won't have many issues with allowing a shall-carry law, since crimes aren't really a strong concern for their citizens, and even if the law carried more violence, this force will be reprehended by the strongness of their programs.
+
+
+(2) the variable must be correlated with the murder rate; 
+
+Attitudes towards guns and crime: If the town has a strong attitude about guns not being dangerous for the population, they will want to prove their point and promote a save use of guns in order to keep them legal. So that will drive the murdering rate down just by affecting expectations and crowd psychology.
+
+Quality of the police and crime-prevention programs: if these programs are in place, people are going to have less incentives towards committing a crime, and will have very low murdering rates. As famously said, the number one prevention against murder is that its illegal, and in states where its strongly enforced, there isn't much place in order for these crimes to happen.
+
+(3) the variable must be state-specific, but time-invariant. In addition to
+explaining why it meets conditions (1)-(3), describe the direction of the bias that results from
+ignoring it.
+
+Attitudes towards guns and crime: Is driving bias up, by shifting estimations down (a higher percentage of murder rates decreased)
+
+Quality of the police and crime-prevention programs: Is driving bias up, by shifting estimations down (a higher percentage of murder rates decreased)
+
+And we can see that, because when we control for these variables using fixed effects by state, the coefficient goes up (closer to zero), meaning that it will make us over-estimate the benefits this law will have in decreasing murdering rates.
+
+
+PART D--------------------------------------------------------------------------
+
+Think of at least one omitted variable that is solved by the inclusion of time fixed effects. A
+similar set of three conditions to above will have to be met, properly modified for time fixed
+effects. Also, describe the direction of the bias that results from ignoring your variable.
+
+A national recession can increase crime in all states; from 1977 to 1999 a lot of economic changes happened, including one of the highest inflation rises in the US history.
+
+
+(1) the variable must be correlated with the probability of passing “shall-carry laws”; 
+
+When economic conditions deteriorate in the US, politicians shift focus to helping unemployed citizens, and the conversation about shall-carry laws become less important. Thus, the amount of states promoting these laws will diminish.
+
+(2) the variable must be correlated with the murder rate; 
+
+An economic decline through those years could have caused more households to not pay their bills because they cannot afford it, and some of them start comitting crimes in order to substain a living. The more crime, the more violence is erote and thus murdering rates.
+
+
+(3) the variable must be state-specific, but time-invariant. In addition to
+explaining why it meets conditions (1)-(3), describe the direction of the bias that results from
+ignoring it.
+
+Every states suffers an economic depression differently, thus we will see some states being affected by the economic situation more than others. But in general, the direction of the bias will be similar to the ones that we mentioned for the last section, bias going up by the coefficient going down further. We also see the drop in law coefficient when we add time fixed effects, and it could be connected to this reason.
+
+
+
+PART E--------------------------------------------------------------------------
+
+
+Think of a variable that is not included in this regression and is also not solved by including
+state level or time fixed effects. In what direction will this variable bias the regression?
+
+Differences in the formulation of "shall carry" laws. Whether a law exist or not is a big generalization in terms of discussing whether murdering rates go up and down. Some laws allow for bigger guns and less requirements to obtain a licence (meaning that almost everyone could get a gun), while others are very strict (fewer number of permits are given, and only given when the citizen is completely compliant with all the requirements to have a gun). Studying the flexibility of these laws will be key in order to figure out if these laws actually help in reducing murdering rates or no.
+
+In terms of the things we needed last section:
+
+1. It is correlated with "murder rate" because strong restrictions will decrease the amount of people that would have a gun in comparison to a state with softer laws (reducing incentives by a lot), and give it to folks who have no reason at all to not give a gun to.
+
+2. It is correlated with laws because it is easier for a population to accept strict gun controls in some states than softer laws.
+
+3. thus, the bias direction is ambiguous, depending on the state, but this categorical variable of the details of the law is not included, and mayber we could have a more insightful view by not generalizing gun laws into an study like this.
+
+
+
+
+```{r}
+
+
+
+```
+
+```{r}
+
+
+
+```
+
+```{r}
+
+
+
+```
+
+```{r}
+
+
+
+```
+
+```{r}
+
+
+
+```
